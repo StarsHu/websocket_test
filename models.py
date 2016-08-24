@@ -1,4 +1,5 @@
 import datetime, uuid
+from tornado import escape
 from sqlalchemy import create_engine, Column
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.mysql import (INTEGER, DATETIME, VARCHAR, TEXT, BOOLEAN)
@@ -34,16 +35,26 @@ class MessageManager(object):
         """
         添加新消息，并返回包含uuid和内容的字典
         """
-        new_message = Message(uuid=str(uuid.uuid4()), body=body["body"])
+        body_dict = escape.json_decode(body.request.body)
+        new_message = Message(uuid=str(uuid.uuid4()), body=body_dict["body"], receiver=body_dict["receiver"])
         self.session.add(new_message)
         self.session.commit()
         return {'id': new_message.uuid, 'body': new_message.body}
+
+    def remove(self, handler):
+        """
+        将指定消息设为已读
+        """
+        message_uuid = handler.get_argument('uuid')
+        remove_message = self.session.query(Message).filter_by(uuid=message_uuid).first()
+        remove_message.flag = True
+        self.session.commit()
 
     def list(self):
         """
         以字典形式返回目前所有未读消息
         """
-        queryset = self.session.query(Message.uuid, Message.body).filter_by(flag=0).all()
+        queryset = self.session.query(Message.uuid, Message.body).filter_by(flag=False).all()
         result = []
         for each_query in queryset:
             result.append({"id":each_query.uuid, "body":each_query.body})

@@ -6,7 +6,7 @@ import os.path
 import uuid
 
 from tornado.options import define, options
-from views import MainHandler, ChatSocketHandler
+from views import MainHandler, ChatSocketHandler, MessageHandler
 
 define("port", default=8888, help="run on the given port", type=int)
 
@@ -15,7 +15,8 @@ class Application(tornado.web.Application):
     def __init__(self):
         handlers = [
             (r"/", MainHandler),
-            (r"/chatsocket", ChatSocketHandler),
+            (r"/websocket", ChatSocketHandler),
+            (r"/message", MessageHandler),
         ]
         settings = dict(
             cookie_secret=base64.b64encode(uuid.uuid4().bytes + uuid.uuid4().bytes),
@@ -24,6 +25,7 @@ class Application(tornado.web.Application):
             xsrf_cookies=True,
         )
         super(Application, self).__init__(handlers, **settings)
+
 
 def main():
     tornado.options.parse_command_line()

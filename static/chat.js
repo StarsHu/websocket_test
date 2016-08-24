@@ -51,7 +51,7 @@ var updater = {
     socket: null,
 
     start: function() {
-        var url = "ws://" + location.host + "/chatsocket";
+        var url = "ws://" + location.host + "/websocket";
         updater.socket = new WebSocket(url);
         updater.socket.onmessage = function(event) {
             updater.showMessage(JSON.parse(event.data));

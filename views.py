@@ -8,11 +8,36 @@ session = Session()
 
 
 class MainHandler(tornado.web.RequestHandler):
+    """
+    访问入口
+    """
     def get(self):
         self.render("index.html", messages=MessageManager().list())
 
 
+class MessageHandler(tornado.web.RequestHandler):
+    """
+    用来给其他app添加新消息
+    """
+    def put(self):
+        result = MessageManager().add(self)
+
+        self.write(result)
+        self.set_status(201)
+        self.set_header('Content-Type', 'application/json')
+        return
+
+    def delete(self):
+        MessageManager().remove(self)
+
+        self.set_status(204)
+        return
+
+
 class ChatSocketHandler(tornado.websocket.WebSocketHandler):
+    """
+    websocket本体
+    """
     waiters = set()
     # cache = MessageManager().list()   已废弃，更新方式转为从数据库拉取
 
@@ -54,8 +79,7 @@ class ChatSocketHandler(tornado.websocket.WebSocketHandler):
         当有新消息到达时启动
         """
         logging.info("got message %r", message)
-        parsed = tornado.escape.json_decode(message)
-        chat = MessageManager().add(parsed)  # 将新消息存到数据库，并获得一个有关于新消息的字典
+        chat = MessageManager().add(message)  # 将新消息存到数据库，并获得一个有关于新消息的字典
 
         chat["html"] = tornado.escape.to_basestring(
             self.render_string("message.html", message=chat))
